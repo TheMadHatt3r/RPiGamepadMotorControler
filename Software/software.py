@@ -10,18 +10,18 @@
 # 20-AUG-2017
 #######################################################
 from inputs import get_gamepad
-import serial
 import time
+import serial
 
 
 
-SERIAL_PORT = "COM6"
+SERIAL_PORT = "/dev/serial0"
 SERIAL_BAUD = 9600
 STICK_ZERO_THRESH = 3
 STICK_ONE_THRESH = 62
 motorL=0
 motorR=0
-SERIAL_DELAY = 50
+
 
 
 
@@ -80,7 +80,9 @@ def inputFilter(event):
 
 
 
+
 def main():
+
     global motorL
     global motorR
     
@@ -92,28 +94,31 @@ def main():
     
     #Start Control Loop.
     cnt_l=0
-    sts=True
-    eventTimer=0
     while 1:
-        events = get_gamepad()
-        for event in events:
+        for i in range(10):
+            print(".")
+            for x in get_gamepad():
+                event = x
+            print("...")
             eventResult = inputFilter(event)
             if eventResult is not None:
                 if eventResult.startswith("ABS_Y"):
-                    t0=time.time()
-                    if ((t0-eventTimer)*1000 > SERIAL_DELAY):
-                        motorL=eventResult.split("=")[1]
-                        setMotorSpeed(motorL,0)
-                        eventTimer = time.time()
-                        
-                if eventResult.startswith("ABS_RY"):
-                    if ((t0-eventTimer)*1000 > SERIAL_DELAY):
-                        motorR=eventResult.split("=")[1]
-                        eventTimer = time.time()
-                        setMotorSpeed(motorR,1) 
+                    motorL=eventResult.split("=")[1]
+                    print("  ml=" + str(motorL))
+                elif eventResult.startswith("ABS_RY"):
+                    motorR=eventResult.split("=")[1]
+                    print("  mr=" + str(motorR))
 
-                        
-                        
+                    
+            cnt_l = cnt_l + 1
+            #print(str(cnt_l))
+        setMotorSpeed(motorL,0)
+        setMotorSpeed(motorR,1) 
+        
+        time.wait(0.01)
+
+
+           
         
 if __name__ == "__main__":
     main()
