@@ -12,6 +12,9 @@
 from inputs import get_gamepad
 import time
 import serial
+import queue
+import threading
+from multiprocessing import Queue
 
 
 
@@ -21,7 +24,7 @@ STICK_ZERO_THRESH = 3
 STICK_ONE_THRESH = 62
 motorL=0
 motorR=0
-
+q = Queue()
 
 
 
@@ -78,44 +81,52 @@ def inputFilter(event):
             return str(eventcode) + "=" + str(data)
 
 
-
+def gamepadMonitor():
+    while True:
+        for event in get_gamepad():
+            eventResult = inputFilter(event)
+            if eventResult is not None:
+                q.put(eventResult)
 
 
 def main():
 
     global motorL
     global motorR
+    cnt_l=0
+    max_delay_timer=0
     
     #Start Serial
     global serialOut
     serialConfig(SERIAL_PORT, SERIAL_BAUD)
-
-    #Set Motors to 0?
+    
+    #Start 2nd Thread
+    t = threading.Thread(target=gamepadMonitor)
+    t.daemon = True
+    t.start()
     
     #Start Control Loop.
-    cnt_l=0
     while 1:
-        for i in range(10):
-            print(".")
-            for x in get_gamepad():
-                event = x
-            print("...")
-            eventResult = inputFilter(event)
-            if eventResult is not None:
-                if eventResult.startswith("ABS_Y"):
-                    motorL=eventResult.split("=")[1]
-                    print("  ml=" + str(motorL))
-                elif eventResult.startswith("ABS_RY"):
-                    motorR=eventResult.split("=")[1]
-                    print("  mr=" + str(motorR))
-
-                    
+        #Loop to eat up buffered controler inputs.
+        while (q.qsize() > 0):
+            eventResult = q.get()
+            if eventResult.startswith("ABS_Y"):
+                motorL=eventResult.split("=")[1]
+                #print("  ml=" + str(motorL))
+            elif eventResult.startswith("ABS_RY"):
+                motorR=eventResult.split("=")[1]
+                #print("  mr=" + str(motorR))
+            #Check if over max update time (Constant stick movment can cause this.)
+            if (time.time() - max_delay_timer)*1000 > 70: #ms
+                setMotorSpeed(motorL,0)
+                setMotorSpeed(motorR,1) 
+                max_delay_timer = time.time()
             cnt_l = cnt_l + 1
             #print(str(cnt_l))
+        #a=time.time()
         setMotorSpeed(motorL,0)
         setMotorSpeed(motorR,1) 
-        
-        time.wait(0.01)
+        #print("Update Time" + str((time.time()-a)*1000))
 
 
            
@@ -129,10 +140,6 @@ if __name__ == "__main__":
 
     
 
-    
-    
-    
-    
     
     
     
