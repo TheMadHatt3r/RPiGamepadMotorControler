@@ -12,7 +12,7 @@
 #######################################################
 from inputs import get_gamepad
 import time
-import serial
+# import serial
 import queue
 import threading
 from multiprocessing import Queue
@@ -20,8 +20,9 @@ import RPi.GPIO as GPIO
 
 
 
-SERIAL_PORT = "/dev/serial0"
-SERIAL_BAUD = 9600
+# SERIAL_PORT = "/dev/serial1"
+# SERIAL_BAUD = 9600
+BYTE_FILE="/home/pi/data.dat"
 STICK_ZERO_THRESH = 3
 STICK_ONE_THRESH = 62
 GPIO_TX_PIN = 4
@@ -32,19 +33,22 @@ q = Queue()
 
 
     
-"""Configure and start serial system."""
-def serialConfig(spport,baud):
-    global serialOut
-    serialOut = serial.Serial(
-               port=spport,
-               baudrate = baud,
-               parity=serial.PARITY_NONE,
-               stopbits=serial.STOPBITS_ONE,
-               bytesize=serial.EIGHTBITS,
-               timeout=0,
-               writeTimeout=1
-           )
-    
+# """Configure and start serial system."""
+# def serialConfig(spport,baud):
+    # global serialOut
+    # serialOut = serial.Serial(
+               # port=spport,
+               # baudrate = baud,
+               # parity=serial.PARITY_NONE,
+               # stopbits=serial.STOPBITS_ONE,
+               # bytesize=serial.EIGHTBITS,
+               # timeout=0,
+               # writeTimeout=1
+           # )
+
+def writeByteFile(speed):
+    with open(BYTE_FILE, 'wb') as f:
+        f.write(bytes([speed]))
 
 
     
@@ -63,8 +67,9 @@ def setMotorSpeed(speed, side):
     else:
         speed = int(speed) + 192
     GPIO.output(GPIO_TX_PIN, 1)
-    serialOut.write(speed)
-    print("Side:" + str(side) + " Speed:" + str(speed))
+    #serialOut.write(speed)
+    writeByteFile(speed)
+    #print("Side:" + str(side) + " Speed:" + str(speed))
     GPIO.output(GPIO_TX_PIN, 0)
 
 
@@ -108,9 +113,11 @@ def main():
     GPIO.setup(GPIO_TX_PIN, GPIO.OUT)
     GPIO.output(GPIO_TX_PIN, 0)
     
+    writeByteFile(65)
+    
     #Start Serial
-    global serialOut
-    serialConfig(SERIAL_PORT, SERIAL_BAUD)
+    #global serialOut
+    #serialConfig(SERIAL_PORT, SERIAL_BAUD)
     
     #Start 2nd Thread
     t = threading.Thread(target=gamepadMonitor)
