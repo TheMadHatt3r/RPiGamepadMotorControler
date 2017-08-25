@@ -3,7 +3,7 @@
 # Desined to take gamepad input and transmit via
 # Serial to a Sabertooth MCU.
 #
-# Required pyserial and inputs. Use pip install for this.
+# Required inputs. Use pip install for this.
 # Uses rpi.gpio for showing output on interface board... (Optional)
 # Requires raspberry-config be used to enable serial ports.
 #
@@ -12,7 +12,6 @@
 #######################################################
 from inputs import get_gamepad
 import time
-# import serial
 import queue
 import threading
 from multiprocessing import Queue
@@ -20,8 +19,6 @@ import RPi.GPIO as GPIO
 
 
 
-# SERIAL_PORT = "/dev/serial1"
-# SERIAL_BAUD = 9600
 BYTE_FILE="/home/pi/data.dat"
 STICK_ZERO_THRESH = 3
 STICK_ONE_THRESH = 62
@@ -32,19 +29,6 @@ q = Queue()
 
 
 
-    
-# """Configure and start serial system."""
-# def serialConfig(spport,baud):
-    # global serialOut
-    # serialOut = serial.Serial(
-               # port=spport,
-               # baudrate = baud,
-               # parity=serial.PARITY_NONE,
-               # stopbits=serial.STOPBITS_ONE,
-               # bytesize=serial.EIGHTBITS,
-               # timeout=0,
-               # writeTimeout=1
-           # )
 
 def writeByteFile(speed):
     with open(BYTE_FILE, 'wb') as f:
@@ -112,12 +96,6 @@ def main():
     GPIO.setmode(GPIO.BCM)
     GPIO.setup(GPIO_TX_PIN, GPIO.OUT)
     GPIO.output(GPIO_TX_PIN, 0)
-    
-    writeByteFile(65)
-    
-    #Start Serial
-    #global serialOut
-    #serialConfig(SERIAL_PORT, SERIAL_BAUD)
     
     #Start 2nd Thread
     t = threading.Thread(target=gamepadMonitor)
