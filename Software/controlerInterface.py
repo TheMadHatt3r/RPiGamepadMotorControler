@@ -19,20 +19,14 @@ import RPi.GPIO as GPIO
 
 
 
-BYTE_FILE="/home/pi/data.dat"
+BYTE_FILE_L="/home/pi/dataL.dat"
+BYTE_FILE_R="/home/pi/dataR.dat"
 STICK_ZERO_THRESH = 3
 STICK_ONE_THRESH = 62
 GPIO_TX_PIN = 4
 motorL=0
 motorR=0
 q = Queue()
-
-
-
-
-def writeByteFile(speed):
-    with open(BYTE_FILE, 'wb') as f:
-        f.write(bytes([speed]))
 
 
     
@@ -45,14 +39,16 @@ def setMotorSpeed(speed, side):
     global serialOut
     #print("Lm:" + str(leftMotor) + " Rm:" + str(rightMotor))
     #SCALE FOR 8 BIT
+    GPIO.output(GPIO_TX_PIN, 1)
     if side == 0:
         speed = int(speed) + 64
         if speed == 0: speed = 1 #Left has 1 less precision.
+        with open(BYTE_FILE_L, 'wb') as f:
+            f.write(bytes([speed]))
     else:
         speed = int(speed) + 192
-    GPIO.output(GPIO_TX_PIN, 1)
-    #serialOut.write(speed)
-    writeByteFile(speed)
+        with open(BYTE_FILE_R, 'wb') as f:
+            f.write(bytes([speed]))
     #print("Side:" + str(side) + " Speed:" + str(speed))
     GPIO.output(GPIO_TX_PIN, 0)
 

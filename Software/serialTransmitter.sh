@@ -9,19 +9,33 @@
 
 SERIAL='/dev/serial0'
 BAUD=9600
-FILE='./data.dat'
+FILE_L='/home/pi/dataL.dat'
+FILE_R='/home/pi/dataR.dat'
 
-#sudo -u pi python3 controlerInterface.py
 
-stty -F $SERIAL $BAUD raw -echo -echoe -echok -echoctl -echoke
+#stty -F $SERIAL $BAUD raw -echo -echoe -echok -echoctl -echoke
+stty -F $SERIAL $BAUD raw
 while true
 do
-  if [ -e  $FILE ]; then
-    Q=`cat $FILE`
+  WAIT=1
+  if [ -e  $FILE_L ]; then
+    Q=`cat $FILE_L`
     printf $Q > $SERIAL
-    rm $FILE
-  else
+    #hexdump -v -e '7/4 "%10d "' -e '"\n"' $FILE_L
+    rm $FILE_L
+    WAIT=0
+  fi
+
+  if [ -e  $FILE_R ]; then
+    Q=`cat $FILE_R`
+    printf $Q > $SERIAL
+    #hexdump -v -e '7/4 "%10d "' -e '"\n"' $FILE_R
+    rm $FILE_R
+    WAIT=0
+  fi
+
+  if [ $WAIT == 1 ]; then
     sleep 0.005
   fi
-  
+
 done
