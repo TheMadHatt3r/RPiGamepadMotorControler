@@ -21,9 +21,9 @@ import RPi.GPIO as GPIO
 
 BYTE_FILE_L="/home/pi/dataL.dat"
 BYTE_FILE_R="/home/pi/dataR.dat"
-STICK_ZERO_THRESH = 3
-STICK_ONE_THRESH = 62
-GPIO_TX_PIN = 4
+STICK_ZERO_THRESH = 4
+STICK_ONE_THRESH = 61
+#GPIO_TX_PIN = 4
 motorL=0
 motorR=0
 q = Queue()
@@ -39,18 +39,24 @@ def setMotorSpeed(speed, side):
     global serialOut
     #print("Lm:" + str(leftMotor) + " Rm:" + str(rightMotor))
     #SCALE FOR 8 BIT
-    GPIO.output(GPIO_TX_PIN, 1)
+    #GPIO.output(GPIO_TX_PIN, 1)
     if side == 0:
         speed = int(speed) + 64
         if speed == 0: speed = 1 #Left has 1 less precision.
-        with open(BYTE_FILE_L, 'wb') as f:
-            f.write(bytes([speed]))
+        try:
+            with open(BYTE_FILE_L, 'wb') as f:
+                f.write(bytes([speed]))
+        except: 
+            pass
     else:
         speed = int(speed) + 192
-        with open(BYTE_FILE_R, 'wb') as f:
-            f.write(bytes([speed]))
+        try:
+            with open(BYTE_FILE_R, 'wb') as f:
+                f.write(bytes([speed]))
+        except: 
+            pass
     #print("Side:" + str(side) + " Speed:" + str(speed))
-    GPIO.output(GPIO_TX_PIN, 0)
+    #GPIO.output(GPIO_TX_PIN, 0)
 
 
 
@@ -89,9 +95,10 @@ def main():
     max_delay_timer=0
     
     #Setup GPIO
-    GPIO.setmode(GPIO.BCM)
-    GPIO.setup(GPIO_TX_PIN, GPIO.OUT)
-    GPIO.output(GPIO_TX_PIN, 0)
+    #Moved to BASH for more real time.
+    #GPIO.setmode(GPIO.BCM)
+    #GPIO.setup(GPIO_TX_PIN, GPIO.OUT)
+    #GPIO.output(GPIO_TX_PIN, 0)
     
     #Start 2nd Thread
     t = threading.Thread(target=gamepadMonitor)
