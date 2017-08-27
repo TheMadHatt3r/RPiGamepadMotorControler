@@ -1,0 +1,3 @@
+#Place in /etc/rc.local to autostart the software at startup.
+sudo -u pi python3 /home/pi/controlerInterface.py &
+sleep 2; sudo bash /home/pi/serialTransmitter.sh &
