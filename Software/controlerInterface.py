@@ -21,7 +21,7 @@ import RPi.GPIO as GPIO
 
 BYTE_FILE_L="/home/pi/dataL.dat"
 BYTE_FILE_R="/home/pi/dataR.dat"
-STICK_ZERO_THRESH = 4
+STICK_ZERO_THRESH = 5
 STICK_ONE_THRESH = 61
 #GPIO_TX_PIN = 4
 motorL=0
@@ -117,9 +117,11 @@ def main():
                 motorR=eventResult.split("=")[1]
                 #print("  mr=" + str(motorR))
             #Check if over max update time (Constant stick movment can cause this.)
-            if (time.time() - max_delay_timer)*1000 > 70: #ms
+            if (time.time() - max_delay_timer)*1000 > 25: #ms
                 setMotorSpeed(motorL,0)
                 setMotorSpeed(motorR,1) 
+                lastMotorL = motorL
+                lastMotorR = motorR
                 max_delay_timer = time.time()
             cnt_l = cnt_l + 1
             #print(str(cnt_l))
@@ -127,9 +129,10 @@ def main():
         if ((lastMotorL != motorL) or (lastMotorR != motorR)):
             setMotorSpeed(motorL,0)
             setMotorSpeed(motorR,1)
-        lastMotorL = motorL
-        lastMotorR = motorR
+            lastMotorL = motorL
+            lastMotorR = motorR
         #print("Update Time" + str((time.time()-a)*1000))
+        time.sleep(0.001)
 
 
            
