@@ -15,6 +15,8 @@
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
+//Catch SIGNALS
+#include <signal.h>
 
 
 #define STICK_ZERO_THRESH 800
@@ -27,15 +29,23 @@ void closeSerialPort(int sfd);
 void setupSerialPort(int sfd);
 int filterScaleInput(JoystickEvent event);
 void setMotorSpeed(int side, char speed, int sfd);
+void ctrlCExit(int sig);
+
+volatile sig_atomic_t ctrlc = 0;
 
 
 
 int main(int argc, char** argv)
 {
-    // Create an instance of Joystick
+    printf("Starting program. No printout due to headless design... Unless errors happen.\n");
+    
+    //Register Signals
+    signal(SIGINT, ctrlCExit); 
+    
+    //Create an instance of Joystick
     Joystick joystick("/dev/input/js0");
 
-    // Ensure that it was found and that we can use it
+    //Ensure that it was found and that we can use it
     if (!joystick.isFound())
     {
         printf("Failed to open /dev/input/js0.\n");
@@ -45,40 +55,55 @@ int main(int argc, char** argv)
     //Startup serial interface
     int sfd = openSerialPort();
     if (sfd == -1)
+    {
+        printf("Failed to open /dev/serial0.\n");
         exit(1);
+    }
     setupSerialPort(sfd);
-    //Close since I'm just testing.
     //closeSerialPort(sfd);
     
 
     while (true)
     {
-    // Restrict rate
-    usleep(1000);
+        // Restrict rate
+        usleep(1000);
 
-    // Attempt to sample an event from the joystick
-    JoystickEvent event;
-    if (joystick.sample(&event))
-    {
-        if (event.isAxis())
+        // Attempt to sample an event from the joystick
+        JoystickEvent event;
+        if (joystick.sample(&event))
         {
-            //printf("Axis %u is at position %d\n", event.number, event.value);
-            int val = filterScaleInput(event);
-            if (val != -100)
+            if (event.isAxis())
             {
-                //printf("Axis %u is at position %d\n", event.number, val);
-                if (event.number == LEFT)
-                    setMotorSpeed(LEFT, val, sfd);
-                else if (event.number == RIGHT)
-                    setMotorSpeed(RIGHT, val, sfd);
-                
+                //printf("Axis %u is at position %d\n", event.number, event.value);
+                int val = filterScaleInput(event);
+                if (val != -100)
+                {
+                    //printf("Axis %u is at position %d\n", event.number, val);
+                    if (event.number == LEFT)
+                        setMotorSpeed(LEFT, val, sfd);
+                    else if (event.number == RIGHT)
+                        setMotorSpeed(RIGHT, val, sfd);
+                    
+                }
             }
         }
-    }
-
+        //Check sigterm
+        if (ctrlc == 1)
+        {
+            closeSerialPort(sfd);
+            printf("\nSafe Exit Triggered via SIGTERM.\n");
+            exit(0);
+        }
     }
 }
 
+
+/**********************************************
+* Function handles SIGTERM for safe closure.
+***********************************************/
+void ctrlCExit(int sig){ // can be called asynchronously
+  ctrlc = 1; // set flag
+}
 
 /**********************************************
 * Function to set proper offsets for MCU.
@@ -101,14 +126,14 @@ void setMotorSpeed(int side, char speed, int sfd)
         speed = speed + 64;
         if (speed == 0)
             speed = 1; //Left has 1 less precision.
-        printf("Left:%d\n",speed);
+        //printf("Left:%d\n",speed);
         buf[0] = speed;
         write(sfd, &buf, 1);
     }
     else
     {
         speed = speed + 192;
-        printf("RIGHT:%d\n",speed);
+        //printf("RIGHT:%d\n",speed);
         buf[0] = speed;
         write(sfd, &buf, 1);
     }
