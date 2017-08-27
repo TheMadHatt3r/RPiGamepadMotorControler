@@ -17,6 +17,11 @@
 #include <string.h>
 //Catch SIGNALS
 #include <signal.h>
+//GPIO
+#include <fstream>
+#include <string>
+#include <iostream>
+#include <sstream>
 
 
 #define STICK_ZERO_THRESH 800
@@ -30,10 +35,13 @@ void setupSerialPort(int sfd);
 int filterScaleInput(JoystickEvent event);
 void setMotorSpeed(int side, char speed, int sfd);
 void ctrlCExit(int sig);
+void setupGPIO(void);
+void gpioOn(void);
+void gpioOff(void);
 
 volatile sig_atomic_t ctrlc = 0;
 
-
+using namespace std;
 
 int main(int argc, char** argv)
 {
@@ -61,6 +69,10 @@ int main(int argc, char** argv)
     }
     setupSerialPort(sfd);
     //closeSerialPort(sfd);
+    
+    //Setup GPIO
+    setupGPIO();
+    gpioOff();
     
 
     while (true)
@@ -121,6 +133,7 @@ void setMotorSpeed(int side, char speed, int sfd)
     unsigned char buf[2];
     buf[0] = 0;
     
+    gpioOn();
     if(side==LEFT)
     {
         speed = speed + 64;
@@ -137,6 +150,7 @@ void setMotorSpeed(int side, char speed, int sfd)
         buf[0] = speed;
         write(sfd, &buf, 1);
     }
+    gpioOff();
     
         
 }
@@ -161,6 +175,45 @@ int filterScaleInput(JoystickEvent event)
         return val;
     }
     return -100;
+}
+
+
+/**********************************************
+* Configure GPIO Pin 4 (Output)
+***********************************************/
+void setupGPIO(void)
+{
+    string export_str = "/sys/class/gpio/export";
+    ofstream exportgpio(export_str.c_str()); //Open "export" file. Convert C++ string to C string.
+    exportgpio << "4";   //write GPIO number to export
+    exportgpio.close();             //close export file
+    
+    string setdir_str ="/sys/class/gpio/gpio4/direction";
+    ofstream setdirgpio(setdir_str.c_str()); // open direction file for gpio
+    setdirgpio << "out"; //write direction to direction file
+    setdirgpio.close(); // close direction file
+}
+
+/**********************************************
+* GPIO4 ON
+***********************************************/
+void gpioOn(void)
+{
+    string setval_str = "/sys/class/gpio/gpio4/value";
+    ofstream setvalgpio(setval_str.c_str()); // open value file for gpio
+    setvalgpio << "1" ;//write value to value file
+    setvalgpio.close();// close value file
+}
+
+/**********************************************
+* GPIO4 OFF
+***********************************************/
+void gpioOff(void)
+{
+    string setval_str = "/sys/class/gpio/gpio4/value";
+    ofstream setvalgpio(setval_str.c_str()); // open value file for gpio
+    setvalgpio << "0" ;//write value to value file
+    setvalgpio.close();// close value file
 }
 
 /**********************************************
